@@ -1,1 +1,26 @@
+import requests
+from bs4 import BeautifulSoup
 
+url = "https://www.amazon.com/Surround-Headphones-Cancelling-Flexible-Earmuffs/dp/B0CCVMWY39/ref=cs_sr_dp_2?_encoding=UTF8&content-id=amzn1.sym.3ee8a8b8-12a8-4ba9-9886-109b6d3579a2&dib=eyJ2IjoiMSJ9.k70XAEMU3DcsVwDpL5Grpp2prRZjzsRxjMNSMWbh7TP2yhOBZR-wuRmFySK-TqXmjQPfqMgRaZzRAKsnu9KWnkDvEaSJ3VXI0OSmqlmWx8t0RfIj3J4LuNZnbb__Duwpq42JToSiU5qYskMCIvSeBtpKK-VRpfw2CopPVxWnJh4EDeDiivJAtnIDZw2h76XMRqkQOVTvEYR7pAyulMggKEoasri0v13kSNljv6AhjXx-Y9pknctYFa-jh5yFam_zGnUefP12FluKfxD3wB28n4p2uLHOyZqkHoxwCdk4X1d8cnIi-ivRfexbBEzSefZJfvyDG4Cjrumu5nUWs0mmIFe3vAGjy_L25KYts08XqURvNo4yrGeFnUdVYjG6zmXk0Ulrq-aC05tbBH7iSuxlRxDXBDLPEDf3iYGAPyWXh5uFphNspDFX5EzRINRGmgjj.kH66jY5RRlU0QTtADGOmGSChuxxBYTYOB0hXiIKkW7s&dib_tag=se&keywords=gaming&pd_rd_r=07e18d56-767a-45da-8a41-ed1086364614&pd_rd_w=JqqCY&pd_rd_wg=v6442&pf_rd_p=3ee8a8b8-12a8-4ba9-9886-109b6d3579a2&pf_rd_r=27RHMP5RYYGG0QV0KMRD&qid=1736182359&sr=8-10&th=1"
+custom_headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+}
+
+response = requests.get(url, headers=custom_headers)
+soup = BeautifulSoup(response.text, "html.parser")
+
+# Extraction du titre
+title_element = soup.select_one("#productTitle")
+if title_element:
+    title = title_element.text.strip()
+    print(f"Title: {title}")
+else:
+    print("Product title not found")
+
+# Extraction de la note
+rating_element = soup.select_one("#acrPopover")
+if rating_element and rating_element.attrs.get("title"):
+    rating_text = rating_element.attrs.get("title")
+    print(f"Rating: {rating_text}")
+else:
+    print("Rating not found")
