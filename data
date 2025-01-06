@@ -24,3 +24,27 @@ if rating_element and rating_element.attrs.get("title"):
     print(f"Rating: {rating_text}")
 else:
     print("Rating not found")
+
+# Extraction du prix
+price_element = soup.select_one("#olpWrapper a-size-small")
+if price_element:
+    price = price_element.text.strip()
+    print(f"Price: {price}")
+else:
+    print("Price not found")
+
+# Extraction de l'image
+image_element = soup.select_one("#landingImage")
+if image_element:
+    image_url = image_element.attrs.get("src")
+    print(f"Image URL: {image_url}")
+else:
+    print("Image URL not found")
+
+# Extraction de la description
+description_element = soup.select_one("#feature-bullets")
+if description_element:
+    description = description_element.text.strip()
+    print(f"Description: {description}")
+else:
+    print("Description not found")
