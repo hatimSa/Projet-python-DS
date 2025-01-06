@@ -54,4 +54,4 @@ if description_element:
     description = description_element.text.strip()
     print(f"Amazon Description: {description}")
 else:
-    print("Amazon Description not found")
+        print("Amazon Description not found")
