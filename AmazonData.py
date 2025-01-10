@@ -56,6 +56,21 @@ for product in products:
             print(f"Price: {price}")
             print(f"Rating: {rating}")
             print(f"Product Link: {product_link}")
+            
+            # Accéder à la page du produit pour extraire la description
+            driver.get(product_link)
+            driver.implicitly_wait(10)  # Attendre que la page du produit se charge
+            
+            # Extraire la description du produit
+            product_soup = BeautifulSoup(driver.page_source, "html.parser")
+            description_element = product_soup.find("div", id="feature-bullets")
+
+            if description_element:
+                description = description_element.text.strip()
+                print(f"Description: {description}")
+            else:
+                print("Description not found")
+            
             print("-" * 50)
         else:
             print("Duplicate product, skipping.")
