@@ -1,73 +1,48 @@
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+import requests
 from bs4 import BeautifulSoup
-import time
 
-# Configuration de Selenium
-options = Options()
-options.add_argument("--headless")  # Mode sans interface graphique
-options.add_argument("--disable-gpu")
-options.add_argument("--no-sandbox")
-options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
+url = "https://www.jumia.ma/jeux-videos-consoles/"
 
-# Lancer le navigateur
-driver = webdriver.Chrome(options=options)
-driver.set_page_load_timeout(30)
+response = requests.get(url)
 
-try:
-    url = "https://www.ebay.com/b/Video-Games-Consoles/1249/bn_1850232"
-    print("Navigating to eBay...")
-    driver.get(url)
+if response.status_code == 200:
+    soup = BeautifulSoup(response.text, "html.parser")
 
-    # Attendre que la page se charge complètement
-    WebDriverWait(driver, 10).until(
-        EC.presence_of_element_located((By.CLASS_NAME, "carousel__viewport"))
-    )
+    products = soup.find_all("article", class_="prd _fb col c-prd")
 
-    # Obtenir le contenu HTML de la page principale
-    soup = BeautifulSoup(driver.page_source, "html.parser")
-    products = soup.find_all("a", class_="bsig__title__wrapper")
+    print(f"{len(products)} produits trouvés!!!")
 
-    print(f"{len(products)} produits trouvés.")
-
-    for product in products[:5]:  # Limiter à 5 produits pour le test
+    for product in products:
         try:
-            title = product.find("h3", class_="textual-display bsig__title__text")
-            price_new = product.find("span", class_="textual-display bsig__price bsig__price--newprice")
-            price_used = product.find("span", class_="textual-display bsig__price bsig__price--usedprice")
-            rating = product.find("div", class_="bsig brw-signal bsig--header bsig--full")
-            link = product.find("a", class_="bsig__title__wrapper")
+            title = product.find("h3", class_="name")
+            old_price = product.find("div", class_="old")
+            price_promo = product.find("div", class_="prc")
+            rating = product.find("div", class_="stars _s")
+            link = product.find("a", class_="core")
 
-            product_link = product['href']
+            # Construire le lien complet du produit
+            product_link = f"https://www.jumia.ma{link['href']}" if link else None
 
             print(f"Titre: {title.text.strip() if title else 'N/A'}")
-            print(f"Prix normal: {price_new.text.strip() if price_new else 'N/A'}")
-            print(f"Prix utilisé: {price_used.text.strip() if price_used else 'N/A'}")
+            print(f"Prix normal: {old_price.text.strip() if old_price else 'N/A'}")
+            print(f"Prix promo: {price_promo.text.strip() if price_promo else 'N/A'}")
             print(f"Note: {rating.text.strip() if rating else 'N/A'}")
             print(f"Link: {product_link}")
 
-            # Vérifier si le lien est déjà complet
-            if not product_link.startswith("https://"):
-                product_link = f"https://www.ebay.com{product_link}"
+            # Accéder à la page du produit pour extraire la description
+            if product_link:
+                product_response = requests.get(product_link)
+                if product_response.status_code == 200:
+                    product_soup = BeautifulSoup(product_response.text, "html.parser")
 
-            print(f"Accès au produit : {product_link}")
-            
-            # Naviguer vers la page du produit
-            driver.get(product_link)
-            time.sleep(3)  # Attendre que la page du produit se charge
+                    description = product_soup.find("div", class_="markup -mhm -pvl -oxa -sc")
 
-            # Extraire la description
-            product_soup = BeautifulSoup(driver.page_source, "html.parser")
-            description = product_soup.find("section", class_="product-spectification").text.strip() if product_soup.find("section", class_="product-spectification") else "Description non trouvée"
-            
-            print(f"Description : {description}")
+                    print(f"Description: {description.text.strip() if description else 'N/A'}")
+                else:
+                    print("Erreur lors de l'accès à la page du produit.")
             print("-" * 50)
 
         except Exception as e:
-            print(f"Erreur lors de l'accès au produit : {e}")
-
-finally:
-    driver.quit()
+            print(f"Error extracting product: {e}")
+else:
+    print(f"Erreur lors de la récupération de la page principale. Code : {response.status_code}")
