@@ -38,7 +38,7 @@ try:
             title = product.find("h3", class_="textual-display bsig__title__text")
             price_new = product.find("span", class_="textual-display bsig__price bsig__price--newprice")
             price_used = product.find("span", class_="textual-display bsig__price bsig__price--usedprice")
-            rating = product.find("div", class_="bsig brw-signal bsig--header bsig--full")
+            rating = product.find("div", class_="star-rating")
             link = product.find("a", class_="bsig__title__wrapper")
 
             product_link = product['href']
