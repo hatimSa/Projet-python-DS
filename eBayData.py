@@ -20,7 +20,7 @@ ebay_url = "https://www.ebay.com/sch/i.html?_nkw=pc+gamer&_sacat=0&_from=R40&_tr
 # Préparer le fichier CSV
 with open("ebay_products_pc_gamer.csv", mode="w", newline="", encoding="utf-8") as file:
     writer = csv.writer(file)
-    writer.writerow(["Title", "Price", "Rating", "Link", "Description", "Promotion"])
+    writer.writerow(["Title", "Price", "Country", "Link", "Description", "Promotion"])
 
     page_number = 1  # Débuter à la première page
     while True:
@@ -60,15 +60,15 @@ with open("ebay_products_pc_gamer.csv", mode="w", newline="", encoding="utf-8") 
                 link_element = product.find("a", class_="s-item__link")
                 product_link = link_element["href"] if link_element else "Lien non trouvé"
 
-                # Visiter la page du produit pour extraire Rating, Description et Promotion
+                # Country
+                country_element = product.find("span", class_="s-item__location s-item__itemLocation")
+                country = country_element.text.strip() if country_element else "Lieu non trouvé"
+
+                # Visiter la page du produit pour extraire Description et Promotion
                 if product_link != "Lien non trouvé":
                     driver.get(product_link)
                     driver.implicitly_wait(10)
                     product_soup = BeautifulSoup(driver.page_source, "html.parser")
-
-                    # Note du produit
-                    rating_element = product_soup.find("div", class_="reviews-seeAll-hdn")
-                    rating = rating_element.text.strip() if rating_element else "Note non trouvée"
 
                     # Description
                     description_element = product_soup.find("div", id="viTabs_0_is")
@@ -78,17 +78,16 @@ with open("ebay_products_pc_gamer.csv", mode="w", newline="", encoding="utf-8") 
                     promotion_element = product_soup.find("span", class_="ux-textspans ux-textspans--EMPHASIS")
                     promotion = promotion_element.text.strip() if promotion_element else "Pas de promotion"
                 else:
-                    rating = "Note non trouvée"
                     description = "Description non trouvée"
                     promotion = "Pas de promotion"
 
                 # Écrire les données dans le fichier CSV
-                writer.writerow([title, price, rating, product_link, description, promotion])
+                writer.writerow([title, price, country, product_link, description, promotion])
 
                 # Afficher les données
                 print(f"Product Title: {title}")
                 print(f"Price: {price}")
-                print(f"Rating: {rating}")
+                print(f"Country: {country}")
                 print(f"Product Link: {product_link}")
                 print(f"Description: {description}")
                 print(f"Promotion: {promotion}")
@@ -103,4 +102,4 @@ with open("ebay_products_pc_gamer.csv", mode="w", newline="", encoding="utf-8") 
 
 # Quitter le navigateur
 driver.quit()
-print("Extraction terminée, données enregistrées dans 'ebay_products.csv'.")
+print("Extraction terminée, données enregistrées dans 'ebay_products_pc_gamer.csv'.")
