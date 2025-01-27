@@ -1,73 +1,106 @@
+import csv
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
+from bs4 import BeautifulSoup
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from bs4 import BeautifulSoup
 import time
 
-# Configuration de Selenium
-options = Options()
-options.add_argument("--headless")  # Mode sans interface graphique
-options.add_argument("--disable-gpu")
-options.add_argument("--no-sandbox")
-options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
+# Configuration du navigateur Selenium
+options = webdriver.ChromeOptions()
+options.add_argument("--headless")  # Mode sans tête pour exécuter sans interface graphique
+options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36")
 
-# Lancer le navigateur
+# Créer une instance du navigateur
 driver = webdriver.Chrome(options=options)
-driver.set_page_load_timeout(30)
 
-try:
-    url = "https://www.ebay.com/b/Video-Games-Consoles/1249/bn_1850232"
-    print("Navigating to eBay...")
-    driver.get(url)
+# URL de recherche initiale sur eBay
+ebay_url = "https://www.ebay.com/sch/i.html?_nkw=pc+gamer&_sacat=0&_from=R40&_trksid=p4432023.m570.l1311"
 
-    # Attendre que la page se charge complètement
-    WebDriverWait(driver, 10).until(
-        EC.presence_of_element_located((By.CLASS_NAME, "carousel__viewport"))
-    )
+# Préparer le fichier CSV
+with open("ebay_products_pc_gamer.csv", mode="w", newline="", encoding="utf-8") as file:
+    writer = csv.writer(file)
+    writer.writerow(["Title", "Price", "Rating", "Link", "Description", "Promotion"])
 
-    # Obtenir le contenu HTML de la page principale
-    soup = BeautifulSoup(driver.page_source, "html.parser")
-    products = soup.find_all("a", class_="bsig__title__wrapper")
+    page_number = 1  # Débuter à la première page
+    while True:
+        # Construire l'URL pour la page courante
+        url = f"{ebay_url}&_pgn={page_number}"
+        driver.get(url)
 
-    print(f"{len(products)} produits trouvés.")
-
-    for product in products[:5]:  # Limiter à 5 produits pour le test
+        # Attendre que les éléments produits apparaissent
         try:
-            title = product.find("h3", class_="textual-display bsig__title__text")
-            price_new = product.find("span", class_="textual-display bsig__price bsig__price--newprice")
-            price_used = product.find("span", class_="textual-display bsig__price bsig__price--usedprice")
-            rating = product.find("div", class_="star-rating")
-            link = product.find("a", class_="bsig__title__wrapper")
-
-            product_link = product['href']
-
-            print(f"Titre: {title.text.strip() if title else 'N/A'}")
-            print(f"Prix normal: {price_new.text.strip() if price_new else 'N/A'}")
-            print(f"Prix utilisé: {price_used.text.strip() if price_used else 'N/A'}")
-            print(f"Note: {rating.text.strip() if rating else 'N/A'}")
-            print(f"Link: {product_link}")
-
-            # Vérifier si le lien est déjà complet
-            if not product_link.startswith("https://"):
-                product_link = f"https://www.ebay.com{product_link}"
-
-            print(f"Accès au produit : {product_link}")
-            
-            # Naviguer vers la page du produit
-            driver.get(product_link)
-            time.sleep(3)  # Attendre que la page du produit se charge
-
-            # Extraire la description
-            product_soup = BeautifulSoup(driver.page_source, "html.parser")
-            description = product_soup.find("section", class_="product-spectification").text.strip() if product_soup.find("section", class_="product-spectification") else "Description non trouvée"
-            
-            print(f"Description : {description}")
-            print("-" * 50)
-
+            WebDriverWait(driver, 20).until(
+                EC.presence_of_all_elements_located((By.CLASS_NAME, "s-item"))
+            )
         except Exception as e:
-            print(f"Erreur lors de l'accès au produit : {e}")
+            print(f"Erreur lors du chargement de la page {page_number}: {e}")
+            break
 
-finally:
-    driver.quit()
+        # Récupérer le contenu de la page
+        soup = BeautifulSoup(driver.page_source, "html.parser")
+
+        # Extraire les éléments produits
+        products = soup.find_all("li", class_="s-item")
+        if not products:  # Si aucun produit n'est trouvé, arrêter la boucle
+            print(f"Aucun produit trouvé sur la page {page_number}. Fin de l'extraction.")
+            break
+
+        for product in products:
+            try:
+                # Titre
+                title_element = product.find("div", class_="s-item__title")
+                title = title_element.text.strip() if title_element else "Titre non trouvé"
+
+                # Prix
+                price_element = product.find("span", class_="s-item__price")
+                price = price_element.text.strip() if price_element else "Prix non trouvé"
+
+                # Lien
+                link_element = product.find("a", class_="s-item__link")
+                product_link = link_element["href"] if link_element else "Lien non trouvé"
+
+                # Visiter la page du produit pour extraire Rating, Description et Promotion
+                if product_link != "Lien non trouvé":
+                    driver.get(product_link)
+                    driver.implicitly_wait(10)
+                    product_soup = BeautifulSoup(driver.page_source, "html.parser")
+
+                    # Note du produit
+                    rating_element = product_soup.find("div", class_="reviews-seeAll-hdn")
+                    rating = rating_element.text.strip() if rating_element else "Note non trouvée"
+
+                    # Description
+                    description_element = product_soup.find("div", id="viTabs_0_is")
+                    description = description_element.text.strip() if description_element else "Description non trouvée"
+
+                    # Promotion (extraire depuis la page produit)
+                    promotion_element = product_soup.find("span", class_="ux-textspans ux-textspans--EMPHASIS")
+                    promotion = promotion_element.text.strip() if promotion_element else "Pas de promotion"
+                else:
+                    rating = "Note non trouvée"
+                    description = "Description non trouvée"
+                    promotion = "Pas de promotion"
+
+                # Écrire les données dans le fichier CSV
+                writer.writerow([title, price, rating, product_link, description, promotion])
+
+                # Afficher les données
+                print(f"Product Title: {title}")
+                print(f"Price: {price}")
+                print(f"Rating: {rating}")
+                print(f"Product Link: {product_link}")
+                print(f"Description: {description}")
+                print(f"Promotion: {promotion}")
+                print("-" * 50)
+
+            except Exception as e:
+                print(f"Erreur lors de l'extraction d'un produit : {e}")
+
+        # Passer à la page suivante
+        page_number += 1
+        time.sleep(2)  # Pause pour éviter d'envoyer trop de requêtes
+
+# Quitter le navigateur
+driver.quit()
+print("Extraction terminée, données enregistrées dans 'ebay_products.csv'.")
