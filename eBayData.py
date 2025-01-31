@@ -1,3 +1,4 @@
+import os
 import csv
 from selenium import webdriver
 from bs4 import BeautifulSoup
@@ -8,7 +9,7 @@ import time
 
 # Configuration du navigateur Selenium
 options = webdriver.ChromeOptions()
-options.add_argument("--headless")  # Mode sans tête pour exécuter sans interface graphique
+options.add_argument("--headless")  # Mode sans tête
 options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36")
 
 # Créer une instance du navigateur
@@ -17,10 +18,16 @@ driver = webdriver.Chrome(options=options)
 # URL de recherche initiale sur eBay
 ebay_url = "https://www.ebay.com/sch/i.html?_nkw=pc+gamer&_sacat=0&_from=R40&_trksid=p4432023.m570.l1311"
 
-# Préparer le fichier CSV
-with open("ebay_products_pc_gamer.csv", mode="w", newline="", encoding="utf-8") as file:
+# Vérifier si le fichier existe déjà
+file_exists = os.path.isfile("ebay_products_pc_gamer.csv")
+
+# Ouvrir le fichier CSV en mode ajout ("a")
+with open("ebay_products_pc_gamer.csv", mode="a", newline="", encoding="utf-8") as file:
     writer = csv.writer(file)
-    writer.writerow(["Title", "Price", "Country", "Link", "Description", "Promotion"])
+    
+    # Écrire l'en-tête uniquement si le fichier n'existe pas encore
+    if not file_exists:
+        writer.writerow(["Title", "Price", "Country", "Link", "Description", "Promotion"])
 
     page_number = 1  # Débuter à la première page
     while True:

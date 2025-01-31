@@ -1,3 +1,4 @@
+import os
 import csv
 from selenium import webdriver
 from bs4 import BeautifulSoup
@@ -13,10 +14,16 @@ driver = webdriver.Chrome(options=options)
 # URL de recherche initiale sur Amazon
 amazon_url = "https://www.amazon.com/s?k=gaming&ref=nb_sb_noss"
 
-# Préparer le fichier CSV
-with open("amazon_products_gaming.csv", mode="w", newline="", encoding="utf-8") as file:
+# Vérifier si le fichier existe déjà
+file_exists = os.path.isfile("amazon_products_gaming.csv")
+
+# Ouvrir le fichier CSV en mode ajout ("a")
+with open("amazon_products_gaming.csv", mode="a", newline="", encoding="utf-8") as file:
     writer = csv.writer(file)
-    writer.writerow(["Title", "Price", "Rating", "Link", "Description"])  # En-têtes des colonnes
+    
+    # Écrire l'en-tête seulement si le fichier n'existe pas encore
+    if not file_exists:
+        writer.writerow(["Title", "Price", "Rating", "Link", "Description"])
 
     # Naviguer vers la page Amazon
     driver.get(amazon_url)
